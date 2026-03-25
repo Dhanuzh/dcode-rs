@@ -13,11 +13,10 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const PLATFORM_PACKAGE_BY_TARGET = {
-  "x86_64-unknown-linux-musl": "@dcode-dev/dcode-linux-x64",
-  "aarch64-unknown-linux-musl": "@dcode-dev/dcode-linux-arm64",
-  "x86_64-apple-darwin": "@dcode-dev/dcode-darwin-x64",
-  "aarch64-apple-darwin": "@dcode-dev/dcode-darwin-arm64",
-  "x86_64-pc-windows-msvc": "@dcode-dev/dcode-win32-x64",
+  "x86_64-unknown-linux-musl": "dcode-rs-linux-x64",
+  "aarch64-unknown-linux-musl": "dcode-rs-linux-arm64",
+  "x86_64-apple-darwin": "dcode-rs-darwin-x64",
+  "aarch64-apple-darwin": "dcode-rs-darwin-arm64",
 };
 
 const { platform, arch } = process;
