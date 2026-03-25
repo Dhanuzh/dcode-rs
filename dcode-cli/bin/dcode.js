@@ -13,12 +13,12 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const PLATFORM_PACKAGE_BY_TARGET = {
-  "x86_64-unknown-linux-musl": "dcode-linux-x64",
-  "aarch64-unknown-linux-musl": "dcode-linux-arm64",
-  "x86_64-apple-darwin": "dcode-darwin-x64",
-  "aarch64-apple-darwin": "dcode-darwin-arm64",
-  "x86_64-pc-windows-msvc": "dcode-win32-x64",
-  "aarch64-pc-windows-msvc": "dcode-win32-arm64",
+  "x86_64-unknown-linux-musl": "@dcode-dev/dcode-linux-x64",
+  "aarch64-unknown-linux-musl": "@dcode-dev/dcode-linux-arm64",
+  "x86_64-apple-darwin": "@dcode-dev/dcode-darwin-x64",
+  "aarch64-apple-darwin": "@dcode-dev/dcode-darwin-arm64",
+  "x86_64-pc-windows-msvc": "@dcode-dev/dcode-win32-x64",
+  "aarch64-pc-windows-msvc": "@dcode-dev/dcode-win32-arm64",
 };
 
 const { platform, arch } = process;
@@ -95,8 +95,8 @@ try {
     const packageManager = detectPackageManager();
     const updateCommand =
       packageManager === "bun"
-        ? "bun install -g dcode@latest"
-        : "npm install -g dcode@latest";
+        ? "bun install -g @dcode-dev/dcode@latest"
+        : "npm install -g @dcode-dev/dcode@latest";
     throw new Error(
       `Missing optional dependency ${platformPackage}. Reinstall dcode: ${updateCommand}`,
     );
@@ -107,8 +107,8 @@ if (!vendorRoot) {
   const packageManager = detectPackageManager();
   const updateCommand =
     packageManager === "bun"
-      ? "bun install -g dcode@latest"
-      : "npm install -g dcode@latest";
+      ? "bun install -g @dcode-dev/dcode@latest"
+      : "npm install -g @dcode-dev/dcode@latest";
   throw new Error(
     `Missing optional dependency ${platformPackage}. Reinstall dcode: ${updateCommand}`,
   );

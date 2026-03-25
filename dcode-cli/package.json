@@ -1,5 +1,5 @@
 {
-  "name": "dcode",
+  "name": "@dcode-dev/dcode",
   "version": "1.0.0",
   "description": "dcode — an AI coding agent that runs locally on your computer",
   "license": "Apache-2.0",
