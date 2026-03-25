@@ -132,6 +132,13 @@ pub struct ModelProviderInfo {
     /// Whether this provider supports the Responses API WebSocket transport.
     #[serde(default)]
     pub supports_websockets: bool,
+
+    /// Fallback model IDs shown in the picker before (or when) the live
+    /// `/models` fetch fails.  Useful for providers like Anthropic where the
+    /// API may require auth scopes or headers that aren't always present.
+    /// These are replaced by real API results when the fetch succeeds.
+    #[serde(default)]
+    pub fallback_models: Vec<String>,
 }
 
 impl ModelProviderInfo {
@@ -167,7 +174,7 @@ impl ModelProviderInfo {
         auth_mode: Option<AuthMode>,
     ) -> crate::error::Result<ApiProvider> {
         let default_base_url = if matches!(auth_mode, Some(AuthMode::Chatgpt)) {
-            "https://chatgpt.com/backend-api/dcode"
+            "https://chatgpt.com/backend-api/codex"
         } else {
             "https://api.openai.com/v1"
         };
@@ -276,6 +283,7 @@ impl ModelProviderInfo {
             websocket_connect_timeout_ms: None,
             requires_openai_auth: true,
             supports_websockets: true,
+            fallback_models: Vec::new(),
         }
     }
 
@@ -313,11 +321,28 @@ pub fn built_in_model_providers(
         ),
         (
             "anthropic",
-            create_third_party_provider(
-                "Anthropic",
-                "https://api.anthropic.com/v1",
-                "ANTHROPIC_API_KEY",
-            ),
+            ModelProviderInfo {
+                http_headers: Some(
+                    [("anthropic-version".to_string(), "2023-06-01".to_string())]
+                        .into_iter()
+                        .collect(),
+                ),
+                // Well-known Claude models shown immediately; replaced by live API
+                // results when the /models fetch succeeds.
+                fallback_models: vec![
+                    "claude-opus-4-5-20251101".to_string(),
+                    "claude-sonnet-4-5-20251022".to_string(),
+                    "claude-haiku-4-5-20251001".to_string(),
+                    "claude-3-5-sonnet-20241022".to_string(),
+                    "claude-3-5-haiku-20241022".to_string(),
+                    "claude-3-opus-20240229".to_string(),
+                ],
+                ..create_third_party_provider(
+                    "Anthropic",
+                    "https://api.anthropic.com/v1",
+                    "ANTHROPIC_API_KEY",
+                )
+            },
         ),
         (
             "groq",
@@ -408,6 +433,7 @@ pub fn built_in_model_providers(
                 websocket_connect_timeout_ms: None,
                 requires_openai_auth: false,
                 supports_websockets: false,
+                fallback_models: Vec::new(),
             },
         ),
     ]
@@ -452,6 +478,7 @@ pub fn create_oss_provider_with_base_url(base_url: &str, wire_api: WireApi) -> M
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        fallback_models: Vec::new(),
     }
 }
 
@@ -478,6 +505,7 @@ pub fn create_third_party_provider(
         websocket_connect_timeout_ms: None,
         requires_openai_auth: false,
         supports_websockets: false,
+        fallback_models: Vec::new(),
     }
 }
 

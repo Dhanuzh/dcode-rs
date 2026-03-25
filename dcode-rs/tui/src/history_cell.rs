@@ -1126,15 +1126,19 @@ pub(crate) fn new_session_info(
     tooltip_override: Option<String>,
     auth_plan: Option<PlanType>,
     show_fast_status: bool,
+    // If `Some`, displayed in the header instead of `event.model`
+    // (e.g. a placeholder when the provider's model list hasn't loaded yet).
+    display_model_override: Option<&str>,
 ) -> SessionInfoCell {
     let SessionConfiguredEvent {
         model,
         reasoning_effort,
         ..
     } = event;
+    let header_model = display_model_override.unwrap_or(&model).to_string();
     // Header box rendered as history (so it appears at the very top)
     let header = SessionHeaderHistoryCell::new_with_style(
-        model.clone(),
+        header_model,
         Style::default(),
         reasoning_effort,
         show_fast_status,
@@ -1173,6 +1177,11 @@ pub(crate) fn new_session_info(
             ]),
             Line::from(vec![
                 "  ".into(),
+                "/provider".into(),
+                " - switch AI provider (GitHub Copilot, OpenAI, Groq, etc.)".dim(),
+            ]),
+            Line::from(vec![
+                "  ".into(),
                 "/review".into(),
                 " - review any changes and find issues".dim(),
             ]),
@@ -1192,7 +1201,7 @@ pub(crate) fn new_session_info(
         {
             parts.push(Box::new(tooltips));
         }
-        if requested_model != model {
+        if display_model_override.is_none() && requested_model != model {
             let lines = vec![
                 "model changed:".magenta().bold().into(),
                 format!("requested: {requested_model}").into(),
@@ -1327,6 +1336,7 @@ impl HistoryCell for SessionHeaderHistoryCell {
 
         const CHANGE_MODEL_HINT_COMMAND: &str = "/model";
         const CHANGE_MODEL_HINT_EXPLANATION: &str = " to change";
+        const CHANGE_PROVIDER_HINT_COMMAND: &str = "/provider";
         const PROVIDER_LABEL: &str = "provider:";
         const DIR_LABEL: &str = "directory:";
         let label_width = DIR_LABEL.len();
@@ -1338,7 +1348,11 @@ impl HistoryCell for SessionHeaderHistoryCell {
         );
         let provider_spans: Vec<Span<'static>> = vec![
             Span::from(format!("{provider_label} ")).dim(),
+            Span::styled("● ", Style::default().fg(Color::Green)),
             Span::from(self.provider.clone()).cyan(),
+            Span::from("   ").dim(),
+            Span::from(CHANGE_PROVIDER_HINT_COMMAND).cyan(),
+            Span::from(CHANGE_MODEL_HINT_EXPLANATION).dim(),
         ];
 
         let model_label = format!(
@@ -2780,6 +2794,7 @@ mod tests {
             Some("Model just became available".to_string()),
             Some(PlanType::Free),
             false,
+            None,
         );
 
         let rendered = render_transcript(&cell).join("\n");
@@ -2798,6 +2813,7 @@ mod tests {
             Some("Model just became available".to_string()),
             Some(PlanType::Free),
             false,
+            None,
         );
 
         let rendered = render_transcript(&cell).join("\n");
@@ -2815,6 +2831,7 @@ mod tests {
             Some("Model just became available".to_string()),
             Some(PlanType::Free),
             false,
+            None,
         );
 
         let rendered = render_transcript(&cell).join("\n");
@@ -2834,6 +2851,7 @@ mod tests {
             Some("Model just became available".to_string()),
             Some(PlanType::Free),
             false,
+            None,
         );
 
         let rendered = render_transcript(&cell).join("\n");

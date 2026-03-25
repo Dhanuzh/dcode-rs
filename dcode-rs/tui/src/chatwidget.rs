@@ -1440,7 +1440,18 @@ impl ChatWidget {
         let initial_messages = event.initial_messages.clone();
         self.last_copyable_output = None;
         let forked_from_id = event.forked_from_id;
-        let model_for_header = event.model.clone();
+        // If the provider hasn't fetched models yet (empty list), show a placeholder
+        // so the header doesn't display a stale model from a previous provider.
+        let models_available = self
+            .models_manager
+            .try_list_models()
+            .map(|m| !m.is_empty())
+            .unwrap_or(true); // assume ok if lock busy
+        let model_for_header = if models_available || event.model.is_empty() {
+            event.model.clone()
+        } else {
+            "no models — use /model to load".to_string()
+        };
         self.session_header.set_model(&model_for_header);
         self.current_collaboration_mode = self.current_collaboration_mode.with_updates(
             Some(model_for_header.clone()),
@@ -1458,6 +1469,11 @@ impl ChatWidget {
         self.refresh_plugin_mentions();
         let startup_tooltip_override = self.startup_tooltip_override.take();
         let show_fast_status = self.should_show_fast_status(&model_for_header, event.service_tier);
+        let display_override = if !models_available && !event.model.is_empty() {
+            Some(model_for_header.as_str())
+        } else {
+            None
+        };
         let session_info_cell = history_cell::new_session_info(
             &self.config,
             &model_for_header,
@@ -1468,6 +1484,7 @@ impl ChatWidget {
                 .auth_cached()
                 .and_then(|auth| auth.account_plan_type()),
             show_fast_status,
+            display_override,
         );
         self.apply_session_info_cell(session_info_cell);
 
@@ -6302,6 +6319,18 @@ impl ChatWidget {
                 return;
             }
         };
+
+        // If the provider hasn't fetched its model list yet (empty after startup),
+        // kick off an async fetch and open the picker when it completes.
+        if presets.is_empty() {
+            self.add_info_message(
+                "Fetching models for this provider, opening picker shortly…".to_string(),
+                None,
+            );
+            self.app_event_tx.send(AppEvent::FetchModelsAndOpenPicker);
+            return;
+        }
+
         self.open_model_popup_with_presets(presets);
     }
 
@@ -6328,9 +6357,9 @@ impl ChatWidget {
             .map(|(provider_id, info)| {
                 let is_current = provider_id == current_provider_id;
                 // Check if the provider has valid auth credentials.
+                let has_auth_json_token = self.auth_manager.auth_cached().is_some();
                 let auth_ok = if info.requires_openai_auth {
                     // OpenAI-style auth: presence checked separately via auth.json.
-                    // Show as "login required" — user must use /logout or restart flow.
                     true // can't check here easily without async, assume configured
                 } else if let Some(ref env_key) = info.env_key {
                     std::env::var(env_key)
@@ -6338,32 +6367,64 @@ impl ChatWidget {
                         .filter(|v| !v.trim().is_empty())
                         .is_some()
                         || info.experimental_bearer_token.is_some()
+                        // Also treat as configured if this provider uses auth.json (e.g. GitHub
+                        // Copilot tokens saved via `login_with_api_key`) and we have a cached token.
+                        || (is_current && has_auth_json_token)
                 } else {
                     true // no auth required (local models)
                 };
-                let auth_label = if !auth_ok {
-                    " (not configured)"
+                // Status dot: ● configured (green), ○ not configured (dim)
+                use ratatui::style::{Color, Style, Stylize};
+                let status_span = if auth_ok {
+                    ratatui::text::Span::styled("● ", Style::default().fg(Color::Green))
                 } else {
-                    ""
+                    ratatui::text::Span::styled("○ ", Style::default().dim())
                 };
-                let name = format!("{}{auth_label}", info.name);
+                let name = info.name.clone();
+                let auth_status = if !auth_ok { " · not configured" } else { "" };
                 let description = if is_current {
-                    Some(format!("[active] provider id: {provider_id}"))
+                    Some(format!("active · id: {provider_id}{auth_status}"))
                 } else {
-                    Some(format!("provider id: {provider_id}"))
+                    Some(format!("id: {provider_id}{auth_status}"))
                 };
                 let tx = app_event_tx.clone();
                 let pid = provider_id.clone();
+                let pname = info.name.clone();
+                let env_key_name = info.env_key.clone();
+                let instructions = info.env_key_instructions.clone();
+                let is_github_copilot = provider_id == "github-copilot";
                 crate::bottom_pane::SelectionItem {
                     name,
+                    name_prefix_spans: vec![status_span],
                     description,
                     selected_description: None,
                     is_current,
                     disabled_reason: None,
                     actions: vec![Box::new(move |_: &crate::app_event_sender::AppEventSender| {
-                        tx.send(AppEvent::PersistProviderSelection {
-                            provider_id: pid.clone(),
-                        });
+                        if auth_ok || is_current {
+                            // Already configured or currently active: just switch.
+                            tx.send(AppEvent::PersistProviderSelection {
+                                provider_id: pid.clone(),
+                            });
+                        } else if is_github_copilot {
+                            // GitHub Copilot uses OAuth — persist the selection and guide user.
+                            tx.send(AppEvent::PersistProviderSelection {
+                                provider_id: pid.clone(),
+                            });
+                        } else if let Some(ref env_key) = env_key_name {
+                            // Other env_key providers: open inline API key entry.
+                            tx.send(AppEvent::OpenProviderApiKeyEntry {
+                                provider_id: pid.clone(),
+                                provider_name: pname.clone(),
+                                env_key_name: env_key.clone(),
+                                instructions: instructions.clone(),
+                            });
+                        } else {
+                            // No special auth needed: just switch.
+                            tx.send(AppEvent::PersistProviderSelection {
+                                provider_id: pid.clone(),
+                            });
+                        }
                     })],
                     dismiss_on_select: true,
                     ..Default::default()
@@ -6375,12 +6436,44 @@ impl ChatWidget {
             .show_selection_view(crate::bottom_pane::SelectionViewParams {
                 title: Some("Switch Provider".to_string()),
                 subtitle: Some(
-                    "Select a provider. Restart dcode to apply the change.".to_string(),
+                    "● configured  ○ not configured — selecting an unconfigured provider will prompt for setup".to_string(),
                 ),
                 footer_hint: Some(crate::bottom_pane::popup_consts::standard_popup_hint_line()),
                 items,
                 ..Default::default()
             });
+    }
+
+    /// Show an inline API key entry prompt for an unconfigured provider.
+    /// The entered key is saved to config.toml as `experimental_bearer_token` under
+    /// `[model_providers.<provider_id>]`, avoiding the need for a shell env var.
+    pub(crate) fn open_provider_api_key_entry(
+        &mut self,
+        provider_id: String,
+        provider_name: String,
+        env_key_name: String,
+        instructions: Option<String>,
+    ) {
+        let tx = self.app_event_tx.clone();
+        let pid = provider_id.clone();
+        let pname = provider_name.clone();
+        let placeholder = format!(
+            "Paste your {provider_name} API key (or set ${env_key_name} in your environment)"
+        );
+        let context_label = instructions.map(|s| format!("Get your key: {s}"));
+        let view = crate::bottom_pane::custom_prompt_view::CustomPromptView::new(
+            format!("Configure {provider_name}"),
+            placeholder,
+            context_label,
+            Box::new(move |api_key: String| {
+                tx.send(AppEvent::PersistProviderApiKey {
+                    provider_id: pid.clone(),
+                    provider_name: pname.clone(),
+                    api_key,
+                });
+            }),
+        );
+        self.bottom_pane.show_view(Box::new(view));
     }
 
     pub(crate) fn open_personality_popup(&mut self) {
@@ -6747,42 +6840,44 @@ impl ChatWidget {
     pub(crate) fn open_all_models_popup(&mut self, presets: Vec<ModelPreset>) {
         if presets.is_empty() {
             self.add_info_message(
-                "No additional models are available right now.".to_string(),
+                "No models are available for this provider. Check that your API key is set or try /provider to switch providers.".to_string(),
                 /*hint*/ None,
             );
             return;
         }
 
+        let current_model = self.current_model().to_string();
         let mut items: Vec<SelectionItem> = Vec::new();
         for preset in presets.into_iter() {
             let description =
                 (!preset.description.is_empty()).then_some(preset.description.to_string());
-            let is_current = preset.model.as_str() == self.current_model();
-            let single_supported_effort = preset.supported_reasoning_efforts.len() == 1;
-            let preset_for_action = preset.clone();
-            let actions: Vec<SelectionAction> = vec![Box::new(move |tx| {
-                let preset_for_event = preset_for_action.clone();
-                tx.send(AppEvent::OpenReasoningPopup {
-                    model: preset_for_event,
-                });
-            })];
+            let is_current = preset.model.as_str() == current_model;
+            let model = preset.model.clone();
+            let default_effort = preset.default_reasoning_effort;
+            let should_prompt_plan_mode_scope =
+                self.should_prompt_plan_mode_reasoning_scope(&model, Some(default_effort));
+            let actions = Self::model_selection_actions(
+                model.clone(),
+                Some(default_effort),
+                should_prompt_plan_mode_scope,
+            );
             items.push(SelectionItem {
                 name: preset.model.clone(),
                 description,
                 is_current,
                 is_default: preset.is_default,
                 actions,
-                dismiss_on_select: single_supported_effort,
+                dismiss_on_select: true,
                 ..Default::default()
             });
         }
 
         let header = self.model_menu_header(
-            "Select Model and Effort",
-            "Access legacy models by running dcode -m <model_name> or in your config.toml",
+            "Select Model",
+            "Press enter to select. Run dcode -m <model_name> to set a specific reasoning effort.",
         );
         self.bottom_pane.show_selection_view(SelectionViewParams {
-            footer_hint: Some("Press enter to select reasoning effort, or esc to dismiss.".into()),
+            footer_hint: Some(crate::bottom_pane::popup_consts::standard_popup_hint_line()),
             items,
             header,
             ..Default::default()

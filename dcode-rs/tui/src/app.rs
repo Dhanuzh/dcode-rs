@@ -3233,6 +3233,23 @@ impl App {
             AppEvent::OpenAllModelsPopup { models } => {
                 self.chat_widget.open_all_models_popup(models);
             }
+            AppEvent::FetchModelsAndOpenPicker => {
+                let models_manager = self.server.get_models_manager();
+                let provider_name = self.chat_widget.config_ref().model_provider.name.clone();
+                let tx = self.app_event_tx.clone();
+                tokio::spawn(async move {
+                    let models = models_manager.list_models(RefreshStrategy::Online).await;
+                    if models.is_empty() {
+                        tx.send(AppEvent::InsertHistoryCell(Box::new(
+                            crate::history_cell::new_error_event(format!(
+                                "Could not load models for {provider_name}. Make sure you are logged in — use /provider to authenticate."
+                            )),
+                        )));
+                    } else {
+                        tx.send(AppEvent::OpenAllModelsPopup { models });
+                    }
+                });
+            }
             AppEvent::OpenFullAccessConfirmation {
                 preset,
                 return_to_permissions,
@@ -3722,12 +3739,13 @@ impl App {
                     .await
                 {
                     Ok(()) => {
-                        self.chat_widget.add_info_message(
-                            format!(
-                                "Provider changed to \"{provider_id}\". Restart dcode to apply."
-                            ),
-                            /*hint*/ None,
-                        );
+                        let msg = if provider_id == "github-copilot" {
+                            // GitHub Copilot uses OAuth — guide the user to /login
+                            "Provider set to GitHub Copilot. Restart dcode, then use /provider to sign in with your GitHub account.".to_string()
+                        } else {
+                            format!("Provider changed to \"{provider_id}\". Restart dcode to apply.")
+                        };
+                        self.chat_widget.add_info_message(msg, /*hint*/ None);
                     }
                     Err(err) => {
                         tracing::error!(error = %err, "failed to persist provider selection");
@@ -3735,6 +3753,41 @@ impl App {
                             .add_error_message(format!("Failed to save provider: {err}"));
                     }
                 }
+            }
+            AppEvent::PersistProviderApiKey {
+                provider_id,
+                provider_name,
+                api_key,
+            } => {
+                match ConfigEditsBuilder::new(&self.config.dcode_home)
+                    .set_provider_bearer_token(&provider_id, &api_key)
+                    .set_model_provider(&provider_id)
+                    .apply()
+                    .await
+                {
+                    Ok(()) => {
+                        self.chat_widget.add_info_message(
+                            format!(
+                                "API key saved for {provider_name}. Restart dcode to start using it."
+                            ),
+                            /*hint*/ None,
+                        );
+                    }
+                    Err(err) => {
+                        tracing::error!(error = %err, "failed to save provider API key");
+                        self.chat_widget
+                            .add_error_message(format!("Failed to save API key: {err}"));
+                    }
+                }
+            }
+            AppEvent::OpenProviderApiKeyEntry {
+                provider_id,
+                provider_name,
+                env_key_name,
+                instructions,
+            } => {
+                self.chat_widget
+                    .open_provider_api_key_entry(provider_id, provider_name, env_key_name, instructions);
             }
             AppEvent::PersistRealtimeAudioDeviceSelection { kind, name } => {
                 let builder = match kind {
@@ -6922,6 +6975,7 @@ guardian_approval = true
                 None,
                 None,
                 false,
+                None,
             )) as Arc<dyn HistoryCell>
         };
 
@@ -7697,6 +7751,7 @@ guardian_approval = true
                 None,
                 None,
                 false,
+                None,
             )) as Arc<dyn HistoryCell>
         };
 

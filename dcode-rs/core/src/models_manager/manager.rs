@@ -40,6 +40,29 @@ use tracing::info;
 use tracing::instrument;
 
 const MODEL_CACHE_FILE: &str = "models_cache.json";
+
+/// Derive a cache filename scoped to a provider so switching providers doesn't
+/// serve another provider's cached model list. For the default OpenAI provider
+/// (no custom base_url) the original `models_cache.json` name is kept for
+/// backwards compatibility. For custom providers a sanitized slug derived from
+/// the base URL is appended, e.g. `models_cache_api_groq_com.json`.
+fn provider_cache_filename(provider: &ModelProviderInfo) -> String {
+    match &provider.base_url {
+        None => MODEL_CACHE_FILE.to_string(),
+        Some(base_url) => {
+            // Strip scheme and trailing slashes, replace non-alphanumeric with underscores.
+            let slug: String = base_url
+                .trim_start_matches("https://")
+                .trim_start_matches("http://")
+                .trim_end_matches('/')
+                .chars()
+                .map(|c| if c.is_alphanumeric() { c } else { '_' })
+                .collect::<String>()
+                .to_lowercase();
+            format!("models_cache_{slug}.json")
+        }
+    }
+}
 const DEFAULT_MODEL_CACHE_TTL: Duration = Duration::from_secs(300);
 const MODELS_REFRESH_TIMEOUT: Duration = Duration::from_secs(5);
 const MODELS_ENDPOINT: &str = "/models";
@@ -212,7 +235,7 @@ impl ModelsManager {
         collaboration_modes_config: CollaborationModesConfig,
         provider: ModelProviderInfo,
     ) -> Self {
-        let cache_path = dcode_home.join(MODEL_CACHE_FILE);
+        let cache_path = dcode_home.join(provider_cache_filename(&provider));
         let cache_manager = ModelsCacheManager::new(cache_path, DEFAULT_MODEL_CACHE_TTL);
         let catalog_mode = if model_catalog.is_some() {
             CatalogMode::Custom
@@ -222,8 +245,19 @@ impl ModelsManager {
         let remote_models = model_catalog
             .map(|catalog| catalog.models)
             .unwrap_or_else(|| {
-                Self::load_remote_models_from_file()
-                    .unwrap_or_else(|err| panic!("failed to load bundled models.json: {err}"))
+                if provider.base_url.is_some() {
+                    // Custom provider: start with fallback models (if any) so the picker
+                    // shows something immediately even before the live /models fetch.
+                    // These are replaced by real API results when the fetch succeeds.
+                    provider
+                        .fallback_models
+                        .iter()
+                        .map(|id| dcode_protocol::openai_models::ModelInfo::for_custom_provider(id.clone()))
+                        .collect()
+                } else {
+                    Self::load_remote_models_from_file()
+                        .unwrap_or_else(|err| panic!("failed to load bundled models.json: {err}"))
+                }
             });
         Self {
             remote_models: RwLock::new(remote_models),

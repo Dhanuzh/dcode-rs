@@ -1,3 +1,4 @@
+pub mod anthropic_oauth;
 pub mod auth;
 pub mod github_copilot;
 pub mod token_data;
@@ -7,6 +8,9 @@ mod pkce;
 mod server;
 
 pub use dcode_client::BuildCustomCaTransportError as BuildLoginHttpClientError;
+pub use anthropic_oauth::AnthropicOAuthRequest;
+pub use anthropic_oauth::create_authorization_url as create_anthropic_oauth_url;
+pub use anthropic_oauth::exchange_code_for_token as exchange_anthropic_oauth_code;
 pub use github_copilot::GithubCopilotDeviceCode;
 pub use github_copilot::poll_github_copilot_token;
 pub use github_copilot::start_github_copilot_auth;

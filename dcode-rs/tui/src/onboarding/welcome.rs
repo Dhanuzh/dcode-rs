@@ -86,8 +86,8 @@ impl WidgetRef for &WelcomeWidget {
         lines.push(Line::from(vec![
             "  ".into(),
             "Welcome to ".into(),
-            "Dcode".bold(),
-            ", OpenAI's command-line coding agent".into(),
+            "dcode".bold(),
+            " — your multi-provider AI coding assistant".into(),
         ]));
 
         Paragraph::new(lines)

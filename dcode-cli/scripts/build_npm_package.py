@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage and optionally package the @openai/codex npm module."""
+"""Stage and optionally package the dcode npm module."""
 
 import argparse
 import json
@@ -10,52 +10,50 @@ import tempfile
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-CODEX_CLI_ROOT = SCRIPT_DIR.parent
-REPO_ROOT = CODEX_CLI_ROOT.parent
-RESPONSES_API_PROXY_NPM_ROOT = REPO_ROOT / "codex-rs" / "responses-api-proxy" / "npm"
-CODEX_SDK_ROOT = REPO_ROOT / "sdk" / "typescript"
-CODEX_NPM_NAME = "@openai/codex"
+DCODE_CLI_ROOT = SCRIPT_DIR.parent
+REPO_ROOT = DCODE_CLI_ROOT.parent
+DCODE_NPM_NAME = "dcode"
 
-# `npm_name` is the local optional-dependency alias consumed by `bin/codex.js`.
-# The underlying package published to npm is always `@openai/codex`.
-CODEX_PLATFORM_PACKAGES: dict[str, dict[str, str]] = {
-    "codex-linux-x64": {
-        "npm_name": "@openai/codex-linux-x64",
+# Platform-specific optional dependency packages.
+# `npm_name` is what bin/dcode.js imports at runtime.
+DCODE_PLATFORM_PACKAGES: dict[str, dict[str, str]] = {
+    "dcode-linux-x64": {
+        "npm_name": "dcode-linux-x64",
         "npm_tag": "linux-x64",
         "target_triple": "x86_64-unknown-linux-musl",
         "os": "linux",
         "cpu": "x64",
     },
-    "codex-linux-arm64": {
-        "npm_name": "@openai/codex-linux-arm64",
+    "dcode-linux-arm64": {
+        "npm_name": "dcode-linux-arm64",
         "npm_tag": "linux-arm64",
         "target_triple": "aarch64-unknown-linux-musl",
         "os": "linux",
         "cpu": "arm64",
     },
-    "codex-darwin-x64": {
-        "npm_name": "@openai/codex-darwin-x64",
+    "dcode-darwin-x64": {
+        "npm_name": "dcode-darwin-x64",
         "npm_tag": "darwin-x64",
         "target_triple": "x86_64-apple-darwin",
         "os": "darwin",
         "cpu": "x64",
     },
-    "codex-darwin-arm64": {
-        "npm_name": "@openai/codex-darwin-arm64",
+    "dcode-darwin-arm64": {
+        "npm_name": "dcode-darwin-arm64",
         "npm_tag": "darwin-arm64",
         "target_triple": "aarch64-apple-darwin",
         "os": "darwin",
         "cpu": "arm64",
     },
-    "codex-win32-x64": {
-        "npm_name": "@openai/codex-win32-x64",
+    "dcode-win32-x64": {
+        "npm_name": "dcode-win32-x64",
         "npm_tag": "win32-x64",
         "target_triple": "x86_64-pc-windows-msvc",
         "os": "win32",
         "cpu": "x64",
     },
-    "codex-win32-arm64": {
-        "npm_name": "@openai/codex-win32-arm64",
+    "dcode-win32-arm64": {
+        "npm_name": "dcode-win32-arm64",
         "npm_tag": "win32-arm64",
         "target_triple": "aarch64-pc-windows-msvc",
         "os": "win32",
@@ -64,44 +62,39 @@ CODEX_PLATFORM_PACKAGES: dict[str, dict[str, str]] = {
 }
 
 PACKAGE_EXPANSIONS: dict[str, list[str]] = {
-    "codex": ["codex", *CODEX_PLATFORM_PACKAGES],
+    "dcode": ["dcode", *DCODE_PLATFORM_PACKAGES],
 }
 
 PACKAGE_NATIVE_COMPONENTS: dict[str, list[str]] = {
-    "codex": [],
-    "codex-linux-x64": ["codex", "rg"],
-    "codex-linux-arm64": ["codex", "rg"],
-    "codex-darwin-x64": ["codex", "rg"],
-    "codex-darwin-arm64": ["codex", "rg"],
-    "codex-win32-x64": ["codex", "rg", "codex-windows-sandbox-setup", "codex-command-runner"],
-    "codex-win32-arm64": ["codex", "rg", "codex-windows-sandbox-setup", "codex-command-runner"],
-    "codex-responses-api-proxy": ["codex-responses-api-proxy"],
-    "codex-sdk": [],
+    "dcode": [],
+    "dcode-linux-x64": ["dcode", "rg"],
+    "dcode-linux-arm64": ["dcode", "rg"],
+    "dcode-darwin-x64": ["dcode", "rg"],
+    "dcode-darwin-arm64": ["dcode", "rg"],
+    "dcode-win32-x64": ["dcode", "rg"],
+    "dcode-win32-arm64": ["dcode", "rg"],
 }
 
 PACKAGE_TARGET_FILTERS: dict[str, str] = {
     package_name: package_config["target_triple"]
-    for package_name, package_config in CODEX_PLATFORM_PACKAGES.items()
+    for package_name, package_config in DCODE_PLATFORM_PACKAGES.items()
 }
 
 PACKAGE_CHOICES = tuple(PACKAGE_NATIVE_COMPONENTS)
 
 COMPONENT_DEST_DIR: dict[str, str] = {
-    "codex": "codex",
-    "codex-responses-api-proxy": "codex-responses-api-proxy",
-    "codex-windows-sandbox-setup": "codex",
-    "codex-command-runner": "codex",
+    "dcode": "dcode",
     "rg": "path",
 }
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build or stage the Codex CLI npm package.")
+    parser = argparse.ArgumentParser(description="Build or stage the dcode CLI npm package.")
     parser.add_argument(
         "--package",
         choices=PACKAGE_CHOICES,
-        default="codex",
-        help="Which npm package to stage (default: codex).",
+        default="dcode",
+        help="Which npm package to stage (default: dcode).",
     )
     parser.add_argument(
         "--version",
@@ -109,9 +102,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--release-version",
-        help=(
-            "Version to stage for npm release."
-        ),
+        help="Version to stage for npm release.",
     )
     parser.add_argument(
         "--staging-dir",
@@ -120,12 +111,6 @@ def parse_args() -> argparse.Namespace:
             "Directory to stage the package contents. Defaults to a new temporary directory "
             "if omitted. The directory must be empty when provided."
         ),
-    )
-    parser.add_argument(
-        "--tmp",
-        dest="staging_dir",
-        type=Path,
-        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--pack-output",
@@ -181,32 +166,21 @@ def main() -> int:
 
         if release_version:
             staging_dir_str = str(staging_dir)
-            if package == "codex":
+            if package == "dcode":
                 print(
                     f"Staged version {version} for release in {staging_dir_str}\n\n"
                     "Verify the CLI:\n"
-                    f"    node {staging_dir_str}/bin/codex.js --version\n"
-                    f"    node {staging_dir_str}/bin/codex.js --help\n\n"
+                    f"    node {staging_dir_str}/bin/dcode.js --version\n"
+                    f"    node {staging_dir_str}/bin/dcode.js --help\n\n"
                 )
-            elif package == "codex-responses-api-proxy":
-                print(
-                    f"Staged version {version} for release in {staging_dir_str}\n\n"
-                    "Verify the responses API proxy:\n"
-                    f"    node {staging_dir_str}/bin/codex-responses-api-proxy.js --help\n\n"
-                )
-            elif package in CODEX_PLATFORM_PACKAGES:
+            elif package in DCODE_PLATFORM_PACKAGES:
                 print(
                     f"Staged version {version} for release in {staging_dir_str}\n\n"
                     "Verify native payload contents:\n"
                     f"    ls {staging_dir_str}/vendor\n\n"
                 )
             else:
-                print(
-                    f"Staged version {version} for release in {staging_dir_str}\n\n"
-                    "Verify the SDK contents:\n"
-                    f"    ls {staging_dir_str}/dist\n"
-                    "    node -e \"import('./dist/index.js').then(() => console.log('ok'))\"\n\n"
-                )
+                print(f"Staged package in {staging_dir}")
         else:
             print(f"Staged package in {staging_dir}")
 
@@ -229,7 +203,7 @@ def prepare_staging_dir(staging_dir: Path | None) -> tuple[Path, bool]:
             raise RuntimeError(f"Staging directory {staging_dir} is not empty.")
         return staging_dir, False
 
-    temp_dir = Path(tempfile.mkdtemp(prefix="codex-npm-stage-"))
+    temp_dir = Path(tempfile.mkdtemp(prefix="dcode-npm-stage-"))
     return temp_dir, True
 
 
@@ -237,62 +211,44 @@ def stage_sources(staging_dir: Path, version: str, package: str) -> None:
     package_json: dict
     package_json_path: Path | None = None
 
-    if package == "codex":
+    if package == "dcode":
         bin_dir = staging_dir / "bin"
         bin_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(CODEX_CLI_ROOT / "bin" / "codex.js", bin_dir / "codex.js")
-        rg_manifest = CODEX_CLI_ROOT / "bin" / "rg"
+        shutil.copy2(DCODE_CLI_ROOT / "bin" / "dcode.js", bin_dir / "dcode.js")
+        rg_manifest = DCODE_CLI_ROOT / "bin" / "rg"
         if rg_manifest.exists():
             shutil.copy2(rg_manifest, bin_dir / "rg")
 
-        readme_src = REPO_ROOT / "README.md"
+        readme_src = DCODE_CLI_ROOT / "README.md"
         if readme_src.exists():
             shutil.copy2(readme_src, staging_dir / "README.md")
 
-        package_json_path = CODEX_CLI_ROOT / "package.json"
-    elif package in CODEX_PLATFORM_PACKAGES:
-        platform_package = CODEX_PLATFORM_PACKAGES[package]
-        platform_npm_tag = platform_package["npm_tag"]
-        platform_version = compute_platform_package_version(version, platform_npm_tag)
+        package_json_path = DCODE_CLI_ROOT / "package.json"
+    elif package in DCODE_PLATFORM_PACKAGES:
+        platform_package = DCODE_PLATFORM_PACKAGES[package]
+        platform_version = compute_platform_package_version(version, platform_package["npm_tag"])
 
-        readme_src = REPO_ROOT / "README.md"
+        readme_src = DCODE_CLI_ROOT / "README.md"
         if readme_src.exists():
             shutil.copy2(readme_src, staging_dir / "README.md")
 
-        with open(CODEX_CLI_ROOT / "package.json", "r", encoding="utf-8") as fh:
-            codex_package_json = json.load(fh)
+        with open(DCODE_CLI_ROOT / "package.json", "r", encoding="utf-8") as fh:
+            dcode_package_json = json.load(fh)
 
         package_json = {
-            "name": CODEX_NPM_NAME,
+            "name": platform_package["npm_name"],
             "version": platform_version,
-            "license": codex_package_json.get("license", "Apache-2.0"),
+            "description": f"dcode native binary for {platform_package['os']}-{platform_package['cpu']}",
+            "license": dcode_package_json.get("license", "Apache-2.0"),
             "os": [platform_package["os"]],
             "cpu": [platform_package["cpu"]],
             "files": ["vendor"],
-            "repository": codex_package_json.get("repository"),
+            "repository": dcode_package_json.get("repository"),
         }
 
-        engines = codex_package_json.get("engines")
+        engines = dcode_package_json.get("engines")
         if isinstance(engines, dict):
             package_json["engines"] = engines
-
-        package_manager = codex_package_json.get("packageManager")
-        if isinstance(package_manager, str):
-            package_json["packageManager"] = package_manager
-    elif package == "codex-responses-api-proxy":
-        bin_dir = staging_dir / "bin"
-        bin_dir.mkdir(parents=True, exist_ok=True)
-        launcher_src = RESPONSES_API_PROXY_NPM_ROOT / "bin" / "codex-responses-api-proxy.js"
-        shutil.copy2(launcher_src, bin_dir / "codex-responses-api-proxy.js")
-
-        readme_src = RESPONSES_API_PROXY_NPM_ROOT / "README.md"
-        if readme_src.exists():
-            shutil.copy2(readme_src, staging_dir / "README.md")
-
-        package_json_path = RESPONSES_API_PROXY_NPM_ROOT / "package.json"
-    elif package == "codex-sdk":
-        package_json_path = CODEX_SDK_ROOT / "package.json"
-        stage_codex_sdk_sources(staging_dir)
     else:
         raise RuntimeError(f"Unknown package '{package}'.")
 
@@ -301,27 +257,15 @@ def stage_sources(staging_dir: Path, version: str, package: str) -> None:
             package_json = json.load(fh)
         package_json["version"] = version
 
-    if package == "codex":
+    if package == "dcode":
         package_json["files"] = ["bin"]
         package_json["optionalDependencies"] = {
-            CODEX_PLATFORM_PACKAGES[platform_package]["npm_name"]: (
-                f"npm:{CODEX_NPM_NAME}@"
-                f"{compute_platform_package_version(version, CODEX_PLATFORM_PACKAGES[platform_package]['npm_tag'])}"
+            DCODE_PLATFORM_PACKAGES[platform_pkg]["npm_name"]: (
+                compute_platform_package_version(version, DCODE_PLATFORM_PACKAGES[platform_pkg]["npm_tag"])
             )
-            for platform_package in PACKAGE_EXPANSIONS["codex"]
-            if platform_package != "codex"
+            for platform_pkg in PACKAGE_EXPANSIONS["dcode"]
+            if platform_pkg != "dcode"
         }
-
-    elif package == "codex-sdk":
-        scripts = package_json.get("scripts")
-        if isinstance(scripts, dict):
-            scripts.pop("prepare", None)
-
-        dependencies = package_json.get("dependencies")
-        if not isinstance(dependencies, dict):
-            dependencies = {}
-        dependencies[CODEX_NPM_NAME] = version
-        package_json["dependencies"] = dependencies
 
     with open(staging_dir / "package.json", "w", encoding="utf-8") as out:
         json.dump(package_json, out, indent=2)
@@ -339,115 +283,60 @@ def run_command(cmd: list[str], cwd: Path | None = None) -> None:
     subprocess.run(cmd, cwd=cwd, check=True)
 
 
-def stage_codex_sdk_sources(staging_dir: Path) -> None:
-    package_root = CODEX_SDK_ROOT
-
-    run_command(["pnpm", "install", "--frozen-lockfile"], cwd=package_root)
-    run_command(["pnpm", "run", "build"], cwd=package_root)
-
-    dist_src = package_root / "dist"
-    if not dist_src.exists():
-        raise RuntimeError("codex-sdk build did not produce a dist directory.")
-
-    shutil.copytree(dist_src, staging_dir / "dist")
-
-    readme_src = package_root / "README.md"
-    if readme_src.exists():
-        shutil.copy2(readme_src, staging_dir / "README.md")
-
-    license_src = REPO_ROOT / "LICENSE"
-    if license_src.exists():
-        shutil.copy2(license_src, staging_dir / "LICENSE")
-
-
 def copy_native_binaries(
     vendor_src: Path,
     staging_dir: Path,
     components: list[str],
-    target_filter: set[str] | None = None,
+    target_filter: set[str] | None,
 ) -> None:
-    vendor_src = vendor_src.resolve()
-    if not vendor_src.exists():
-        raise RuntimeError(f"Vendor source directory not found: {vendor_src}")
-
-    components_set = {component for component in components if component in COMPONENT_DEST_DIR}
-    if not components_set:
-        return
-
-    vendor_dest = staging_dir / "vendor"
-    if vendor_dest.exists():
-        shutil.rmtree(vendor_dest)
-    vendor_dest.mkdir(parents=True, exist_ok=True)
-
-    copied_targets: set[str] = set()
+    """Copy pre-built native binaries from vendor_src into staging_dir/vendor/."""
+    vendor_dst = staging_dir / "vendor"
 
     for target_dir in vendor_src.iterdir():
         if not target_dir.is_dir():
             continue
-
-        if target_filter is not None and target_dir.name not in target_filter:
+        target_triple = target_dir.name
+        if target_filter and target_triple not in target_filter:
             continue
 
-        dest_target_dir = vendor_dest / target_dir.name
-        dest_target_dir.mkdir(parents=True, exist_ok=True)
-        copied_targets.add(target_dir.name)
-
-        for component in components_set:
-            dest_dir_name = COMPONENT_DEST_DIR.get(component)
-            if dest_dir_name is None:
+        for component in components:
+            dest_subdir = COMPONENT_DEST_DIR.get(component, component)
+            src_component_dir = target_dir / component
+            if not src_component_dir.exists():
+                print(
+                    f"Warning: missing component '{component}' for target '{target_triple}' "
+                    f"in vendor_src. Skipping.",
+                    file=sys.stderr,
+                )
                 continue
 
-            src_component_dir = target_dir / dest_dir_name
-            if not src_component_dir.exists():
-                raise RuntimeError(
-                    f"Missing native component '{component}' in vendor source: {src_component_dir}"
-                )
+            dst_component_dir = vendor_dst / target_triple / dest_subdir
+            dst_component_dir.mkdir(parents=True, exist_ok=True)
 
-            dest_component_dir = dest_target_dir / dest_dir_name
-            if dest_component_dir.exists():
-                shutil.rmtree(dest_component_dir)
-            shutil.copytree(src_component_dir, dest_component_dir)
-
-    if target_filter is not None:
-        missing_targets = sorted(target_filter - copied_targets)
-        if missing_targets:
-            missing_list = ", ".join(missing_targets)
-            raise RuntimeError(f"Missing target directories in vendor source: {missing_list}")
+            for item in src_component_dir.iterdir():
+                dst = dst_component_dir / item.name
+                if item.is_file():
+                    shutil.copy2(item, dst)
+                    if not item.name.endswith((".dll", ".lib", ".pdb")):
+                        dst.chmod(dst.stat().st_mode | 0o111)
+                elif item.is_dir():
+                    shutil.copytree(item, dst, dirs_exist_ok=True)
 
 
-def run_npm_pack(staging_dir: Path, output_path: Path) -> Path:
-    output_path = output_path.resolve()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with tempfile.TemporaryDirectory(prefix="codex-npm-pack-") as pack_dir_str:
-        pack_dir = Path(pack_dir_str)
-        stdout = subprocess.check_output(
-            ["npm", "pack", "--json", "--pack-destination", str(pack_dir)],
-            cwd=staging_dir,
-            text=True,
-        )
-        try:
-            pack_output = json.loads(stdout)
-        except json.JSONDecodeError as exc:
-            raise RuntimeError("Failed to parse npm pack output.") from exc
-
-        if not pack_output:
-            raise RuntimeError("npm pack did not produce an output tarball.")
-
-        tarball_name = pack_output[0].get("filename") or pack_output[0].get("name")
-        if not tarball_name:
-            raise RuntimeError("Unable to determine npm pack output filename.")
-
-        tarball_path = pack_dir / tarball_name
-        if not tarball_path.exists():
-            raise RuntimeError(f"Expected npm pack output not found: {tarball_path}")
-
-        shutil.move(str(tarball_path), output_path)
-
-    return output_path
+def run_npm_pack(staging_dir: Path, pack_output: Path) -> Path:
+    pack_output.parent.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(
+        ["npm", "pack", "--json"],
+        cwd=staging_dir,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    pack_result = json.loads(result.stdout)
+    generated_tarball = staging_dir / pack_result[0]["filename"]
+    shutil.move(str(generated_tarball), pack_output)
+    return pack_output
 
 
 if __name__ == "__main__":
-    import sys
-
     sys.exit(main())

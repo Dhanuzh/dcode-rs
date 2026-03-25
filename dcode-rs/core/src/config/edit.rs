@@ -851,6 +851,21 @@ impl ConfigEditsBuilder {
         self
     }
 
+    /// Save an API key for a custom provider as `experimental_bearer_token` under
+    /// `[model_providers.<provider_id>]` in config.toml.  The token is picked up by
+    /// `auth_provider_from_auth` on the next startup without requiring an env var.
+    pub fn set_provider_bearer_token(mut self, provider_id: &str, token: &str) -> Self {
+        self.edits.push(ConfigEdit::SetPath {
+            segments: vec![
+                "model_providers".to_string(),
+                provider_id.to_string(),
+                "experimental_bearer_token".to_string(),
+            ],
+            value: value(token),
+        });
+        self
+    }
+
     pub fn set_service_tier(mut self, service_tier: Option<ServiceTier>) -> Self {
         self.edits.push(ConfigEdit::SetServiceTier { service_tier });
         self

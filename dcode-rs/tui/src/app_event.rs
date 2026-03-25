@@ -289,6 +289,22 @@ pub(crate) enum AppEvent {
         provider_id: String,
     },
 
+    /// Save an API key for a custom provider (stored as experimental_bearer_token in config.toml)
+    /// and switch to that provider. Shown when user selects an unconfigured env_key provider.
+    PersistProviderApiKey {
+        provider_id: String,
+        provider_name: String,
+        api_key: String,
+    },
+
+    /// Show an API key entry prompt for an unconfigured provider.
+    OpenProviderApiKeyEntry {
+        provider_id: String,
+        provider_name: String,
+        env_key_name: String,
+        instructions: Option<String>,
+    },
+
     /// Persist the selected service tier to the appropriate config.
     PersistServiceTierSelection {
         service_tier: Option<ServiceTier>,
@@ -329,6 +345,10 @@ pub(crate) enum AppEvent {
     OpenAllModelsPopup {
         models: Vec<ModelPreset>,
     },
+
+    /// Fetch models from the current provider (async) and then open the model picker.
+    /// Used when the model list is empty (e.g. first open after switching to a custom provider).
+    FetchModelsAndOpenPicker,
 
     /// Open the confirmation prompt before enabling full access mode.
     OpenFullAccessConfirmation {

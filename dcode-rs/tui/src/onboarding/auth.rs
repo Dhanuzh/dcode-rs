@@ -5,10 +5,13 @@ use dcode_core::auth::AuthCredentialsStoreMode;
 use dcode_core::auth::CLIENT_ID;
 use dcode_core::auth::login_with_api_key;
 use dcode_core::auth::read_openai_api_key_from_env;
+use dcode_core::config::edit::ConfigEditsBuilder;
 use dcode_login::DeviceCode;
 use dcode_login::GithubCopilotDeviceCode;
 use dcode_login::ServerOptions;
 use dcode_login::ShutdownHandle;
+use dcode_login::create_anthropic_oauth_url;
+use dcode_login::exchange_anthropic_oauth_code;
 use dcode_login::poll_github_copilot_token;
 use dcode_login::run_login_server;
 use dcode_login::start_github_copilot_auth;
@@ -98,6 +101,12 @@ pub(crate) enum SignInState {
     GithubCopilotConfigured,
     AnthropicApiKey(ApiKeyInputState),
     AnthropicConfigured,
+    AnthropicOAuthPending {
+        url: String,
+        verifier: String,
+        code_input: ApiKeyInputState,
+    },
+    AnthropicOAuthConfigured,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -210,7 +219,7 @@ impl KeyboardHandler for AuthModeWidget {
                         drop(sign_in_state);
                         self.request_frame.schedule_frame();
                     }
-                    SignInState::AnthropicApiKey(_) => {
+                    SignInState::AnthropicApiKey(_) | SignInState::AnthropicOAuthPending { .. } => {
                         self.error = None;
                         *sign_in_state = SignInState::PickMode;
                         drop(sign_in_state);
@@ -423,8 +432,8 @@ impl AuthModeWidget {
                     lines.extend(create_mode_item(
                         idx,
                         option,
-                        "Sign in with Anthropic",
-                        "Use your Anthropic API key (console.anthropic.com)",
+                        "Sign in with Anthropic API key",
+                        "Paste your sk-ant-... key from console.anthropic.com",
                     ));
                 }
             }
@@ -620,8 +629,7 @@ impl AuthModeWidget {
         let lines = vec![
             "✓ Signed in with GitHub Copilot".fg(Color::Green).into(),
             "".into(),
-            "  Token stored. Set `model_provider = \"github-copilot\"` in".into(),
-            "  ~/.dcode/config.toml to use it.".into(),
+            "  Provider set to GitHub Copilot. Restart dcode to start using it.".into(),
         ];
         Paragraph::new(lines)
             .wrap(Wrap { trim: false })
@@ -688,8 +696,7 @@ impl AuthModeWidget {
         let lines = vec![
             "✓ Anthropic API key configured".fg(Color::Green).into(),
             "".into(),
-            "  Set `model_provider = \"anthropic\"` in ~/.dcode/config.toml".into(),
-            "  to use Anthropic models.".into(),
+            "  Provider set to Anthropic. Restart dcode to start using it.".into(),
         ];
         Paragraph::new(lines)
             .wrap(Wrap { trim: false })
@@ -756,12 +763,16 @@ impl AuthModeWidget {
     }
 
     fn handle_api_key_entry_key_event(&mut self, key_event: &KeyEvent) -> bool {
-        // Check if we're in Anthropic API key entry first.
+        // Check if we're in Anthropic API key entry or OAuth code entry first.
         {
             let guard = self.sign_in_state.read().unwrap();
             if matches!(&*guard, SignInState::AnthropicApiKey(_)) {
                 drop(guard);
                 return self.handle_anthropic_key_entry_key_event(key_event);
+            }
+            if matches!(&*guard, SignInState::AnthropicOAuthPending { .. }) {
+                drop(guard);
+                return self.handle_anthropic_oauth_code_key_event(key_event);
             }
         }
 
@@ -844,6 +855,10 @@ impl AuthModeWidget {
             true
         } else if let SignInState::AnthropicApiKey(state) = &mut *guard {
             state.value.push_str(trimmed);
+            self.error = None;
+            true
+        } else if let SignInState::AnthropicOAuthPending { code_input, .. } = &mut *guard {
+            code_input.value.push_str(trimmed);
             self.error = None;
             true
         } else {
@@ -992,6 +1007,11 @@ impl AuthModeWidget {
         ) {
             Ok(()) => {
                 self.error = None;
+                // Auto-set model_provider to "anthropic" so the user doesn't
+                // need to manually edit config.toml.
+                let _ = ConfigEditsBuilder::new(&self.dcode_home)
+                    .set_model_provider("anthropic")
+                    .apply_blocking();
                 self.auth_manager.reload();
                 *self.sign_in_state.write().unwrap() = SignInState::AnthropicConfigured;
             }
@@ -1005,6 +1025,183 @@ impl AuthModeWidget {
             }
         }
         self.request_frame.schedule_frame();
+    }
+
+    fn start_anthropic_oauth(&mut self) {
+        self.error = None;
+        let oauth = create_anthropic_oauth_url();
+        *self.sign_in_state.write().unwrap() = SignInState::AnthropicOAuthPending {
+            url: oauth.url,
+            verifier: oauth.verifier,
+            code_input: ApiKeyInputState::default(),
+        };
+        self.request_frame.schedule_frame();
+    }
+
+    fn handle_anthropic_oauth_code_key_event(&mut self, key_event: &KeyEvent) -> bool {
+        let mut should_exchange: Option<(String, String)> = None; // (code, verifier)
+        let mut should_request_frame = false;
+
+        {
+            let mut guard = self.sign_in_state.write().unwrap();
+            if let SignInState::AnthropicOAuthPending { verifier, code_input, .. } = &mut *guard {
+                match key_event.code {
+                    KeyCode::Esc => {
+                        *guard = SignInState::PickMode;
+                        self.error = None;
+                        should_request_frame = true;
+                    }
+                    KeyCode::Enter => {
+                        let code = code_input.value.trim().to_string();
+                        if code.is_empty() {
+                            self.error = Some("Please paste the authorization code".to_string());
+                            should_request_frame = true;
+                        } else {
+                            should_exchange = Some((code, verifier.clone()));
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        code_input.value.pop();
+                        self.error = None;
+                        should_request_frame = true;
+                    }
+                    KeyCode::Char(c)
+                        if key_event.kind == KeyEventKind::Press
+                            && !key_event.modifiers.contains(KeyModifiers::SUPER)
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL)
+                            && !key_event.modifiers.contains(KeyModifiers::ALT) =>
+                    {
+                        code_input.value.push(c);
+                        self.error = None;
+                        should_request_frame = true;
+                    }
+                    _ => {}
+                }
+            } else {
+                return false;
+            }
+        }
+
+        if let Some((code, verifier)) = should_exchange {
+            self.exchange_anthropic_oauth_code(code, verifier);
+        } else if should_request_frame {
+            self.request_frame.schedule_frame();
+        }
+        true
+    }
+
+    fn exchange_anthropic_oauth_code(&mut self, code: String, verifier: String) {
+        let sign_in_state = self.sign_in_state.clone();
+        let request_frame = self.request_frame.clone();
+        let dcode_home = self.dcode_home.clone();
+        let auth_manager = self.auth_manager.clone();
+        let creds_mode = self.cli_auth_credentials_store_mode;
+
+        tokio::spawn(async move {
+            match exchange_anthropic_oauth_code(&code, &verifier).await {
+                Ok(access_token) => {
+                    match login_with_api_key(&dcode_home, &access_token, creds_mode) {
+                        Ok(()) => {
+                            // Also set model_provider to "anthropic" so the user doesn't need
+                            // to manually edit config.toml.
+                            let _ = ConfigEditsBuilder::new(&dcode_home)
+                                .set_model_provider("anthropic")
+                                .apply_blocking();
+                            auth_manager.reload();
+                            *sign_in_state.write().unwrap() = SignInState::AnthropicOAuthConfigured;
+                        }
+                        Err(err) => {
+                            tracing::warn!("Failed to save Anthropic OAuth token: {err}");
+                            let mut guard = sign_in_state.write().unwrap();
+                            if let SignInState::AnthropicOAuthPending { code_input, .. } = &mut *guard {
+                                code_input.value = code;
+                            }
+                        }
+                    }
+                }
+                Err(err) => {
+                    tracing::warn!("Anthropic OAuth exchange failed: {err}");
+                    let mut guard = sign_in_state.write().unwrap();
+                    if let SignInState::AnthropicOAuthPending { code_input, .. } = &mut *guard {
+                        code_input.value = code;
+                    }
+                }
+            }
+            request_frame.schedule_frame();
+        });
+    }
+
+    fn render_anthropic_oauth_pending(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        url: &str,
+        code_input: &ApiKeyInputState,
+    ) {
+        let [intro_area, input_area, footer_area] = Layout::vertical([
+            Constraint::Min(6),
+            Constraint::Length(3),
+            Constraint::Min(2),
+        ])
+        .areas(area);
+
+        let intro_lines: Vec<Line> = vec![
+            Line::from(vec![
+                "> ".into(),
+                "Sign in with Claude (OAuth)".bold(),
+            ]),
+            "".into(),
+            "  1. Open this link in your browser and authorize dcode:".into(),
+            "".into(),
+            Line::from(vec!["  ".into(), url.cyan().underlined()]),
+            "".into(),
+            "  2. Paste the authorization code you receive below.".into(),
+            "".into(),
+        ];
+        Paragraph::new(intro_lines)
+            .wrap(Wrap { trim: false })
+            .render(intro_area, buf);
+
+        let content_line: Line = if code_input.value.is_empty() {
+            vec!["Paste authorization code here".dim()].into()
+        } else {
+            Line::from(code_input.value.clone())
+        };
+        Paragraph::new(content_line)
+            .wrap(Wrap { trim: false })
+            .block(
+                Block::default()
+                    .title("Authorization code")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::default().fg(Color::Cyan)),
+            )
+            .render(input_area, buf);
+
+        let mut footer_lines: Vec<Line> = vec![
+            "  Press Enter to sign in".dim().into(),
+            "  Press Esc to cancel".dim().into(),
+        ];
+        if let Some(error) = &self.error {
+            footer_lines.push("".into());
+            footer_lines.push(error.as_str().red().into());
+        }
+        Paragraph::new(footer_lines)
+            .wrap(Wrap { trim: false })
+            .render(footer_area, buf);
+
+        mark_url_hyperlink(buf, intro_area, url);
+    }
+
+    fn render_anthropic_oauth_configured(&self, area: Rect, buf: &mut Buffer) {
+        let lines = vec![
+            "✓ Signed in with Claude (OAuth)".fg(Color::Green).into(),
+            "".into(),
+            "  Provider set to Anthropic. Restart dcode to start using it.".into(),
+        ];
+        Paragraph::new(lines)
+            .wrap(Wrap { trim: false })
+            .render(area, buf);
     }
 
     fn start_github_copilot_login(&mut self) {
@@ -1058,6 +1255,10 @@ impl AuthModeWidget {
                 Ok(token) => {
                     match login_with_api_key(&dcode_home, &token, creds_mode) {
                         Ok(()) => {
+                            // Also set model_provider to "github-copilot" automatically.
+                            let _ = ConfigEditsBuilder::new(&dcode_home)
+                                .set_model_provider("github-copilot")
+                                .apply_blocking();
                             auth_manager.reload();
                             *sign_in_state.write().unwrap() = SignInState::GithubCopilotConfigured;
                         }
@@ -1171,6 +1372,7 @@ impl StepStateProvider for AuthModeWidget {
             SignInState::PickMode
             | SignInState::ApiKeyEntry(_)
             | SignInState::AnthropicApiKey(_)
+            | SignInState::AnthropicOAuthPending { .. }
             | SignInState::ChatGptContinueInBrowser(_)
             | SignInState::ChatGptDeviceCode(_)
             | SignInState::GithubCopilotDeviceCode(_)
@@ -1178,7 +1380,8 @@ impl StepStateProvider for AuthModeWidget {
             SignInState::ChatGptSuccess
             | SignInState::ApiKeyConfigured
             | SignInState::GithubCopilotConfigured
-            | SignInState::AnthropicConfigured => StepState::Complete,
+            | SignInState::AnthropicConfigured
+            | SignInState::AnthropicOAuthConfigured => StepState::Complete,
         }
     }
 }
@@ -1225,6 +1428,16 @@ impl WidgetRef for AuthModeWidget {
             }
             SignInState::AnthropicConfigured => {
                 self.render_anthropic_configured(area, buf);
+            }
+            SignInState::AnthropicOAuthPending { url, code_input, .. } => {
+                let url = url.clone();
+                let code_input = code_input.clone();
+                drop(sign_in_state);
+                self.render_anthropic_oauth_pending(area, buf, &url, &code_input);
+                return;
+            }
+            SignInState::AnthropicOAuthConfigured => {
+                self.render_anthropic_oauth_configured(area, buf);
             }
         }
     }

@@ -19,10 +19,10 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-CODEX_CLI_ROOT = SCRIPT_DIR.parent
-DEFAULT_WORKFLOW_URL = "https://github.com/openai/codex/actions/runs/17952349351"  # rust-v0.40.0
+DCODE_CLI_ROOT = SCRIPT_DIR.parent
+DEFAULT_WORKFLOW_URL = ""  # set --workflow-url when running locally
 VENDOR_DIR_NAME = "vendor"
-RG_MANIFEST = CODEX_CLI_ROOT / "bin" / "rg"
+RG_MANIFEST = DCODE_CLI_ROOT / "bin" / "rg"
 BINARY_TARGETS = (
     "x86_64-unknown-linux-musl",
     "aarch64-unknown-linux-musl",
@@ -44,27 +44,10 @@ class BinaryComponent:
 WINDOWS_TARGETS = tuple(target for target in BINARY_TARGETS if "windows" in target)
 
 BINARY_COMPONENTS = {
-    "codex": BinaryComponent(
-        artifact_prefix="codex",
-        dest_dir="codex",
-        binary_basename="codex",
-    ),
-    "codex-responses-api-proxy": BinaryComponent(
-        artifact_prefix="codex-responses-api-proxy",
-        dest_dir="codex-responses-api-proxy",
-        binary_basename="codex-responses-api-proxy",
-    ),
-    "codex-windows-sandbox-setup": BinaryComponent(
-        artifact_prefix="codex-windows-sandbox-setup",
-        dest_dir="codex",
-        binary_basename="codex-windows-sandbox-setup",
-        targets=WINDOWS_TARGETS,
-    ),
-    "codex-command-runner": BinaryComponent(
-        artifact_prefix="codex-command-runner",
-        dest_dir="codex",
-        binary_basename="codex-command-runner",
-        targets=WINDOWS_TARGETS,
+    "dcode": BinaryComponent(
+        artifact_prefix="dcode",
+        dest_dir="dcode",
+        binary_basename="dcode",
     ),
 }
 
@@ -120,7 +103,7 @@ def _gha_group(title: str):
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Install native Codex binaries.")
+    parser = argparse.ArgumentParser(description="Install native dcode binaries.")
     parser.add_argument(
         "--workflow-url",
         help=(
@@ -154,14 +137,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
 
-    codex_cli_root = (args.root or CODEX_CLI_ROOT).resolve()
+    codex_cli_root = (args.root or DCODE_CLI_ROOT).resolve()
     vendor_dir = codex_cli_root / VENDOR_DIR_NAME
     vendor_dir.mkdir(parents=True, exist_ok=True)
 
     components = args.components or [
-        "codex",
-        "codex-windows-sandbox-setup",
-        "codex-command-runner",
+        "dcode",
         "rg",
     ]
 
@@ -267,7 +248,7 @@ def _download_artifacts(workflow_id: str, dest_dir: Path) -> None:
         "--dir",
         str(dest_dir),
         "--repo",
-        "openai/codex",
+        "ddhanush1/dcode",
         workflow_id,
     ]
     subprocess.check_call(cmd)
