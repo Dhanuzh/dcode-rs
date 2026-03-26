@@ -42,6 +42,9 @@ pub enum WireApi {
     Responses,
     /// OpenAI-compatible Chat Completions API at `/chat/completions`.
     Chat,
+    /// Anthropic native Messages API at `/messages`.
+    #[serde(rename = "anthropic")]
+    AnthropicMessages,
 }
 
 impl fmt::Display for WireApi {
@@ -49,6 +52,7 @@ impl fmt::Display for WireApi {
         let value = match self {
             Self::Responses => "responses",
             Self::Chat => "chat",
+            Self::AnthropicMessages => "anthropic",
         };
         f.write_str(value)
     }
@@ -63,9 +67,10 @@ impl<'de> Deserialize<'de> for WireApi {
         match value.as_str() {
             "responses" => Ok(Self::Responses),
             "chat" => Ok(Self::Chat),
+            "anthropic" => Ok(Self::AnthropicMessages),
             _ => Err(serde::de::Error::unknown_variant(
                 &value,
-                &["responses", "chat"],
+                &["responses", "chat", "anthropic"],
             )),
         }
     }
@@ -327,6 +332,9 @@ pub fn built_in_model_providers(
                         .into_iter()
                         .collect(),
                 ),
+                // Use the native Anthropic Messages API so that both API keys
+                // and OAuth tokens (sk-ant-oat) are accepted as Bearer tokens.
+                wire_api: WireApi::AnthropicMessages,
                 // Well-known Claude models shown immediately; replaced by live API
                 // results when the /models fetch succeeds.
                 fallback_models: vec![

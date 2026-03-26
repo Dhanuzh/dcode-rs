@@ -1139,6 +1139,63 @@ impl ModelClientSession {
         Ok(stream)
     }
 
+    /// Streams a turn via the Anthropic native Messages API.
+    #[allow(clippy::too_many_arguments)]
+    #[instrument(
+        name = "model_client.stream_anthropic_api",
+        level = "info",
+        skip_all,
+        fields(
+            model = %model_info.slug,
+            wire_api = "anthropic",
+            transport = "anthropic_http",
+            http.method = "POST",
+            api.path = "messages"
+        )
+    )]
+    async fn stream_anthropic_api(
+        &self,
+        prompt: &Prompt,
+        model_info: &ModelInfo,
+        session_telemetry: &SessionTelemetry,
+    ) -> Result<ResponseStream> {
+        let client_setup = self.client.current_client_setup().await?;
+        let transport = ReqwestTransport::new(build_reqwest_client());
+
+        let responses_request = self.build_responses_request(
+            &client_setup.api_provider,
+            prompt,
+            model_info,
+            None,
+            Default::default(),
+            None,
+        )?;
+
+        let anthropic_body = dcode_api::build_anthropic_request(
+            &responses_request.model,
+            &responses_request.instructions,
+            &responses_request.input,
+            &responses_request.tools,
+        )
+        .map_err(map_api_error)?;
+
+        let extra_headers = self.client.build_subagent_headers();
+
+        let client = dcode_api::AnthropicClient::new(
+            transport,
+            client_setup.api_provider,
+            client_setup.api_auth,
+        );
+
+        let stream = client
+            .stream_request(anthropic_body, extra_headers)
+            .await
+            .map_err(map_api_error)?;
+
+        let (stream, _) = map_response_stream(stream, session_telemetry.clone());
+        Ok(stream)
+    }
+
     /// Streams a turn via the Responses API over WebSocket transport.
     #[allow(clippy::too_many_arguments)]
     #[instrument(
@@ -1406,6 +1463,10 @@ impl ModelClientSession {
                     turn_metadata_header,
                 )
                 .await
+            }
+            WireApi::AnthropicMessages => {
+                self.stream_anthropic_api(prompt, model_info, session_telemetry)
+                    .await
             }
         }
     }
