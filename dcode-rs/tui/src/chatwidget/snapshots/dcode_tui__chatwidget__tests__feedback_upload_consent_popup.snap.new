@@ -1,0 +1,20 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 9049
+expression: popup
+---
+  Upload logs?
+
+  The following files will be sent:
+    • dcode-logs.log
+    • dcode-connectivity-diagnostics.txt
+
+  Connectivity diagnostics
+    - OPENAI_BASE_URL is set and may affect connectivity.
+      - OPENAI_BASE_URL = hello
+
+› 1. Yes  Share the current Dcode session logs with the team for
+          troubleshooting.
+  2. No
+
+  Press enter to confirm or esc to go back

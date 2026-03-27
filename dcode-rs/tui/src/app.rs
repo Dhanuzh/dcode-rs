@@ -3740,10 +3740,9 @@ impl App {
                 {
                     Ok(()) => {
                         let msg = if provider_id == "github-copilot" {
-                            // GitHub Copilot uses OAuth — guide the user to /login
-                            "Provider set to GitHub Copilot. Restart dcode, then use /provider to sign in with your GitHub account.".to_string()
+                            "Provider set to GitHub Copilot. Press Ctrl+C to exit, then run `dcode` again. Use /login to sign in with your GitHub account.".to_string()
                         } else {
-                            format!("Provider changed to \"{provider_id}\". Restart dcode to apply.")
+                            format!("Provider changed to \"{provider_id}\". Press Ctrl+C to exit, then run `dcode` again to use the new provider.")
                         };
                         self.chat_widget.add_info_message(msg, /*hint*/ None);
                     }
@@ -3768,7 +3767,7 @@ impl App {
                     Ok(()) => {
                         self.chat_widget.add_info_message(
                             format!(
-                                "API key saved for {provider_name}. Restart dcode to start using it."
+                                "API key saved for {provider_name}. Press Ctrl+C to exit, then run `dcode` again to start using it."
                             ),
                             /*hint*/ None,
                         );

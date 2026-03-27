@@ -646,18 +646,24 @@ impl BottomPaneView for ListSelectionView {
                 && !modifiers.contains(KeyModifiers::CONTROL)
                 && !modifiers.contains(KeyModifiers::ALT) =>
             {
-                if let Some(idx) = c
+                // Number keys select from the *visible* (filtered) list, not
+                // the raw unfiltered items. The UI renders "1.", "2.", etc.
+                // based on visible_idx, so we must map through filtered_indices.
+                if let Some(visible_idx) = c
                     .to_digit(10)
                     .map(|d| d as usize)
                     .and_then(|d| d.checked_sub(1))
-                    && idx < self.items.len()
-                    && self
-                        .items
-                        .get(idx)
-                        .is_some_and(|item| item.disabled_reason.is_none() && !item.is_disabled)
+                    && visible_idx < self.filtered_indices.len()
                 {
-                    self.state.selected_idx = Some(idx);
-                    self.accept();
+                    let actual_idx = self.filtered_indices[visible_idx];
+                    if self
+                        .items
+                        .get(actual_idx)
+                        .is_some_and(|item| item.disabled_reason.is_none() && !item.is_disabled)
+                    {
+                        self.state.selected_idx = Some(visible_idx);
+                        self.accept();
+                    }
                 }
             }
             KeyEvent {

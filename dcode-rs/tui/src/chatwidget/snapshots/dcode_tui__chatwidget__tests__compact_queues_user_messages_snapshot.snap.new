@@ -1,0 +1,23 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 12502
+expression: term.backend().vt100().screen().contents()
+---
+
+
+
+
+
+
+
+
+
+
+• Working (0s • esc to interrupt)
+
+• Messages to be submitted at end of turn
+  ↳ Steer submitted while /compact was running.
+
+› Ask Dcode to do anything
+
+  ? for shortcuts                                            100% context left

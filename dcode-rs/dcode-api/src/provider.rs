@@ -8,6 +8,16 @@ use std::collections::HashMap;
 use std::time::Duration;
 use url::Url;
 
+/// How the provider expects authentication tokens to be sent.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum AuthHeaderStyle {
+    /// Standard `Authorization: Bearer <token>` header (OpenAI, GitHub Copilot, etc.).
+    #[default]
+    Bearer,
+    /// Anthropic-style `x-api-key: <token>` header.
+    XApiKey,
+}
+
 /// High-level retry configuration for a provider.
 ///
 /// This is converted into a `RetryPolicy` used by `dcode-client` to drive
@@ -47,6 +57,8 @@ pub struct Provider {
     pub headers: HeaderMap,
     pub retry: RetryConfig,
     pub stream_idle_timeout: Duration,
+    /// How this provider expects authentication tokens in request headers.
+    pub auth_header_style: AuthHeaderStyle,
 }
 
 impl Provider {

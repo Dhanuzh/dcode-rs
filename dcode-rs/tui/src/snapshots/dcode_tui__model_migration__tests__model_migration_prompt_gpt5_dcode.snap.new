@@ -1,0 +1,16 @@
+---
+source: tui/src/model_migration.rs
+assertion_line: 507
+expression: terminal.backend()
+---
+
+> Dcode just got an upgrade. Introducing gpt-5.1-dcode-max.
+
+  We recommend switching from gpt-5-dcode to
+  gpt-5.1-dcode-max.
+
+  Dcode-optimized flagship for deep and fast reasoning.
+  Learn more about gpt-5.1-dcode-max at
+  https://www.dcode.com/models/gpt-5.1-dcode-max
+
+  Press enter to continue

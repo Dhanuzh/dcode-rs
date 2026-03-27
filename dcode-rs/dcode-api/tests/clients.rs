@@ -134,6 +134,7 @@ fn provider(name: &str) -> Provider {
             retry_transport: true,
         },
         stream_idle_timeout: Duration::from_millis(10),
+        auth_header_style: Default::default(),
     }
 }
 
@@ -265,6 +266,7 @@ async fn streaming_client_retries_on_transport_error() -> Result<()> {
         store: false,
         stream: true,
         include: Vec::new(),
+        max_output_tokens: None,
         service_tier: None,
         prompt_cache_key: None,
         text: None,
@@ -307,6 +309,7 @@ async fn azure_default_store_attaches_ids_and_headers() -> Result<()> {
         store: true,
         stream: true,
         include: Vec::new(),
+        max_output_tokens: None,
         service_tier: None,
         prompt_cache_key: None,
         text: None,

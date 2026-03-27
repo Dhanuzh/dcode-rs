@@ -8,6 +8,7 @@
 use crate::auth::AuthMode;
 use crate::error::EnvVarError;
 use dcode_api::Provider as ApiProvider;
+use dcode_api::provider::AuthHeaderStyle;
 use dcode_api::provider::RetryConfig as ApiRetryConfig;
 use http::HeaderMap;
 use http::header::HeaderName;
@@ -197,6 +198,11 @@ impl ModelProviderInfo {
             retry_transport: true,
         };
 
+        let auth_header_style = match self.wire_api {
+            WireApi::AnthropicMessages => AuthHeaderStyle::XApiKey,
+            _ => AuthHeaderStyle::Bearer,
+        };
+
         Ok(ApiProvider {
             name: self.name.clone(),
             base_url,
@@ -204,6 +210,7 @@ impl ModelProviderInfo {
             headers,
             retry,
             stream_idle_timeout: self.stream_idle_timeout(),
+            auth_header_style,
         })
     }
 

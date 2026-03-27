@@ -1,0 +1,12 @@
+---
+source: tui/src/app.rs
+assertion_line: 7054
+expression: rendered
+---
+╭────────────────────────────────────────────────────╮
+│ >_ dcode (v<VERSION>)                              │
+│                                                    │
+│ provider:  ● OpenAI   /provider to change          │
+│ model:     gpt-5.4 xhigh   fast   /model to change │
+│ directory: /tmp/project                            │
+╰────────────────────────────────────────────────────╯

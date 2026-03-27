@@ -55,7 +55,7 @@ impl<T: HttpTransport, A: AuthProvider> EndpointSession<T, A> {
         if let Some(body) = body {
             req.body = Some(body.clone());
         }
-        add_auth_headers(&self.auth, req)
+        add_auth_headers(&self.auth, req, self.provider.auth_header_style)
     }
 
     pub(crate) async fn execute(

@@ -1,0 +1,6 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 6313
+expression: rendered
+---
+• `/copy` is unavailable before the first Dcode output or right after a rollback.

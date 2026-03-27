@@ -1,0 +1,16 @@
+---
+source: tui/src/model_migration.rs
+assertion_line: 534
+expression: terminal.backend()
+---
+
+> Dcode just got an upgrade. Introducing gpt-5.1-dcode-mini.
+
+  We recommend switching from gpt-5-dcode-mini to
+  gpt-5.1-dcode-mini.
+
+  Optimized for dcode. Cheaper, faster, but less capable.
+  Learn more about gpt-5.1-dcode-mini at
+  https://www.dcode.com/models/gpt-5.1-dcode-mini
+
+  Press enter to continue

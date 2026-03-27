@@ -402,7 +402,7 @@ checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
 
 [[package]]
 name = "app_test_support"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -1576,7 +1576,7 @@ dependencies = [
 
 [[package]]
 name = "core_test_support"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1995,7 +1995,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-ansi-escape"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "ansi-to-tui",
  "ratatui",
@@ -2004,7 +2004,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-api"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "assert_matches",
@@ -2034,7 +2034,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-app-server"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "app_test_support",
@@ -2092,7 +2092,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-app-server-client"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-app-server",
  "dcode-app-server-protocol",
@@ -2114,7 +2114,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-app-server-protocol"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2141,7 +2141,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-app-server-test-client"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2162,7 +2162,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-apply-patch"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2178,7 +2178,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-arg0"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "dcode-apply-patch",
@@ -2192,7 +2192,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-artifacts"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-package-manager",
  "flate2",
@@ -2213,7 +2213,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-async-utils"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "async-trait",
  "pretty_assertions",
@@ -2223,7 +2223,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-backend-client"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "dcode-backend-openapi-models",
@@ -2238,7 +2238,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-backend-openapi-models"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "serde",
  "serde_json",
@@ -2247,7 +2247,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-chatgpt"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2265,7 +2265,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-cli"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2315,7 +2315,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-client"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2345,7 +2345,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-cloud-requirements"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2368,7 +2368,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-cloud-tasks"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2398,7 +2398,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-cloud-tasks-client"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2413,7 +2413,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-code-mode"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "async-trait",
  "pretty_assertions",
@@ -2427,7 +2427,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-config"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "dcode-app-server-protocol",
@@ -2450,7 +2450,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-connectors"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "dcode-app-server-protocol",
@@ -2462,7 +2462,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-core"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -2579,7 +2579,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-debug-client"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2591,7 +2591,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-exec"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2636,7 +2636,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-exec-server"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2660,7 +2660,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-execpolicy"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2677,7 +2677,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-execpolicy-legacy"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "allocative",
  "anyhow",
@@ -2697,7 +2697,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-experimental-api-macros"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2706,7 +2706,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-features"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-login",
  "dcode-otel",
@@ -2720,7 +2720,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-feedback"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "dcode-protocol",
@@ -2732,7 +2732,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-file-search"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2748,7 +2748,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-git"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "assert_matches",
  "once_cell",
@@ -2764,7 +2764,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-hooks"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2782,7 +2782,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-keyring-store"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "keyring",
  "tracing",
@@ -2790,7 +2790,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-linux-sandbox"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "cc",
  "clap",
@@ -2811,7 +2811,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-lmstudio"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-core",
  "reqwest",
@@ -2824,7 +2824,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-login"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2862,7 +2862,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-mcp-server"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "core_test_support",
@@ -2890,7 +2890,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-network-proxy"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2921,7 +2921,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-ollama"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "assert_matches",
  "async-stream",
@@ -2939,7 +2939,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-otel"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "chrono",
  "dcode-api",
@@ -2971,7 +2971,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-package-manager"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "fd-lock",
  "flate2",
@@ -2991,7 +2991,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-process-hardening"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "libc",
  "pretty_assertions",
@@ -2999,7 +2999,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-protocol"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "dcode-execpolicy",
@@ -3026,7 +3026,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-responses-api-proxy"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -3042,7 +3042,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-rmcp-client"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "axum",
@@ -3076,7 +3076,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-sandboxing"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-network-proxy",
  "dcode-protocol",
@@ -3093,7 +3093,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-secrets"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "age",
  "anyhow",
@@ -3113,7 +3113,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-shell-command"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -3133,7 +3133,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-shell-escalation"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3154,7 +3154,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-skills"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-utils-absolute-path",
  "include_dir",
@@ -3163,7 +3163,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-state"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3185,7 +3185,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-stdio-to-uds"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "dcode-utils-cargo-bin",
@@ -3196,7 +3196,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-terminal-detection"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "pretty_assertions",
  "tracing",
@@ -3204,7 +3204,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-test-macros"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3213,7 +3213,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-tui"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "arboard",
@@ -3307,7 +3307,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-tui-app-server"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "arboard",
@@ -3399,7 +3399,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-absolute-path"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dirs",
  "path-absolutize",
@@ -3413,14 +3413,14 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-approval-presets"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-protocol",
 ]
 
 [[package]]
 name = "dcode-utils-cache"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "lru 0.16.3",
  "sha1",
@@ -3429,7 +3429,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-cargo-bin"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "assert_cmd",
  "runfiles",
@@ -3438,7 +3438,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-cli"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "clap",
  "dcode-protocol",
@@ -3449,15 +3449,15 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-elapsed"
-version = "0.0.0"
+version = "2.0.3"
 
 [[package]]
 name = "dcode-utils-fuzzy-match"
-version = "0.0.0"
+version = "2.0.3"
 
 [[package]]
 name = "dcode-utils-home-dir"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dirs",
  "pretty_assertions",
@@ -3466,7 +3466,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-image"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "base64 0.22.1",
  "dcode-utils-cache",
@@ -3478,7 +3478,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-json-to-toml"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "pretty_assertions",
  "serde_json",
@@ -3487,7 +3487,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-oss"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-core",
  "dcode-lmstudio",
@@ -3496,7 +3496,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-pty"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "filedescriptor",
@@ -3512,7 +3512,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-readiness"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -3523,14 +3523,14 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-rustls-provider"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "rustls",
 ]
 
 [[package]]
 name = "dcode-utils-sandbox-summary"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "dcode-core",
  "dcode-protocol",
@@ -3540,7 +3540,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-sleep-inhibitor"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "core-foundation 0.9.4",
  "libc",
@@ -3550,14 +3550,14 @@ dependencies = [
 
 [[package]]
 name = "dcode-utils-stream-parser"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "pretty_assertions",
 ]
 
 [[package]]
 name = "dcode-utils-string"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "pretty_assertions",
  "regex-lite",
@@ -3565,7 +3565,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-v8-poc"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "pretty_assertions",
  "v8",
@@ -3573,7 +3573,7 @@ dependencies = [
 
 [[package]]
 name = "dcode-windows-sandbox"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -6000,7 +6000,7 @@ checksum = "b3eede3bdf92f3b4f9dc04072a9ce5ab557d5ec9038773bf9ffcd5588b3cc05b"
 
 [[package]]
 name = "mcp_test_support"
-version = "0.0.0"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "core_test_support",

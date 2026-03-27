@@ -1,0 +1,6 @@
+---
+source: tui/src/markdown_render_tests.rs
+assertion_line: 808
+expression: rendered
+---
+See dcode-rs/tui/src/markdown_render.rs:74.

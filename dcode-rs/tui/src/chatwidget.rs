@@ -6359,17 +6359,14 @@ impl ChatWidget {
                 // Check if the provider has valid auth credentials.
                 let has_auth_json_token = self.auth_manager.auth_cached().is_some();
                 let auth_ok = if info.requires_openai_auth {
-                    // OpenAI-style auth: presence checked separately via auth.json.
-                    true // can't check here easily without async, assume configured
+                    // OpenAI-style auth: check if we actually have a cached token.
+                    has_auth_json_token
                 } else if let Some(ref env_key) = info.env_key {
                     std::env::var(env_key)
                         .ok()
                         .filter(|v| !v.trim().is_empty())
                         .is_some()
                         || info.experimental_bearer_token.is_some()
-                        // Also treat as configured if this provider uses auth.json (e.g. GitHub
-                        // Copilot tokens saved via `login_with_api_key`) and we have a cached token.
-                        || (is_current && has_auth_json_token)
                 } else {
                     true // no auth required (local models)
                 };
@@ -6394,12 +6391,13 @@ impl ChatWidget {
                 let instructions = info.env_key_instructions.clone();
                 let is_github_copilot = provider_id == "github-copilot";
                 crate::bottom_pane::SelectionItem {
-                    name,
+                    name: name.clone(),
                     name_prefix_spans: vec![status_span],
                     description,
                     selected_description: None,
                     is_current,
                     disabled_reason: None,
+                    search_value: Some(format!("{name} {provider_id}")),
                     actions: vec![Box::new(move |_: &crate::app_event_sender::AppEventSender| {
                         if auth_ok || is_current {
                             // Already configured or currently active: just switch.
@@ -6436,10 +6434,12 @@ impl ChatWidget {
             .show_selection_view(crate::bottom_pane::SelectionViewParams {
                 title: Some("Switch Provider".to_string()),
                 subtitle: Some(
-                    "● configured  ○ not configured — selecting an unconfigured provider will prompt for setup".to_string(),
+                    "● configured  ○ not configured — select to switch or set up a provider".to_string(),
                 ),
                 footer_hint: Some(crate::bottom_pane::popup_consts::standard_popup_hint_line()),
                 items,
+                is_searchable: true,
+                search_placeholder: Some("Filter providers…".to_string()),
                 ..Default::default()
             });
     }
@@ -6863,23 +6863,30 @@ impl ChatWidget {
             );
             items.push(SelectionItem {
                 name: preset.model.clone(),
-                description,
+                description: description.clone(),
                 is_current,
                 is_default: preset.is_default,
                 actions,
                 dismiss_on_select: true,
+                search_value: Some(format!(
+                    "{} {}",
+                    preset.model,
+                    description.as_deref().unwrap_or("")
+                )),
                 ..Default::default()
             });
         }
 
         let header = self.model_menu_header(
             "Select Model",
-            "Press enter to select. Run dcode -m <model_name> to set a specific reasoning effort.",
+            "Type to filter. Press enter to select.",
         );
         self.bottom_pane.show_selection_view(SelectionViewParams {
             footer_hint: Some(crate::bottom_pane::popup_consts::standard_popup_hint_line()),
             items,
             header,
+            is_searchable: true,
+            search_placeholder: Some("Filter models…".to_string()),
             ..Default::default()
         });
     }

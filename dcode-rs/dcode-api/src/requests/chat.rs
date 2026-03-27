@@ -7,6 +7,11 @@ use serde_json::json;
 
 use crate::error::ApiError;
 
+/// Default max_tokens for Chat Completions API.
+/// Keeps output bounded to avoid excessive credit consumption on providers
+/// like GitHub Copilot that bill based on allocated context window.
+const DEFAULT_MAX_TOKENS: u64 = 16384;
+
 /// Build a Chat Completions request JSON body from the given components.
 pub fn build_chat_request(
     model: &str,
@@ -14,6 +19,7 @@ pub fn build_chat_request(
     input: &[ResponseItem],
     tools_json: &[Value],
     parallel_tool_calls: bool,
+    max_output_tokens: Option<u64>,
 ) -> Result<Value, ApiError> {
     let mut messages: Vec<Value> = Vec::new();
 
@@ -38,6 +44,7 @@ pub fn build_chat_request(
     let mut body = json!({
         "model": model,
         "messages": messages,
+        "max_tokens": max_output_tokens.unwrap_or(DEFAULT_MAX_TOKENS),
         "stream": true,
         "stream_options": {"include_usage": true},
     });
@@ -88,7 +95,10 @@ fn response_item_to_chat_message(item: &ResponseItem) -> Option<Value> {
             }))
         }
         ResponseItem::CustomToolCall {
-            call_id, name, input, ..
+            call_id,
+            name,
+            input,
+            ..
         } => Some(json!({
             "role": "assistant",
             "content": null,
@@ -101,7 +111,9 @@ fn response_item_to_chat_message(item: &ResponseItem) -> Option<Value> {
                 }
             }]
         })),
-        ResponseItem::CustomToolCallOutput { call_id, output, .. } => {
+        ResponseItem::CustomToolCallOutput {
+            call_id, output, ..
+        } => {
             let content = output.to_string();
             Some(json!({
                 "role": "tool",

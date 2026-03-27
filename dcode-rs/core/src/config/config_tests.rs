@@ -4200,6 +4200,7 @@ model_verbosity = "high"
         websocket_connect_timeout_ms: Some(15_000),
         requires_openai_auth: false,
         supports_websockets: false,
+        fallback_models: vec![],
     };
     let model_provider_map = {
         let mut model_provider_map = built_in_model_providers(/* openai_base_url */ None);

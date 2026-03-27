@@ -1,0 +1,20 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 8640
+expression: popup
+---
+  Select Model
+  Type to filter. Press enter to select.
+
+  Filter models…
+› gpt-5.3-codex (default)  Latest frontier agentic coding model.
+  gpt-5.4                  Latest frontier agentic coding model.
+  gpt-5.2-codex            Frontier agentic coding model.
+  gpt-5.1-codex-max        Codex-optimized flagship for deep and fast
+                           reasoning.
+  gpt-5.2                  Latest frontier model with improvements across
+                           knowledge, reasoning and coding
+  gpt-5.1-codex-mini       Optimized for codex. Cheaper, faster, but less
+                           capable.
+
+  Press enter to confirm or esc to go back

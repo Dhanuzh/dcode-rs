@@ -1,0 +1,10 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 11835
+expression: terminal.backend()
+---
+"                                                                                "
+"                                                                                "
+"› Ask Dcode to do anything                                                      "
+"                                                                                "
+"  gpt-5.4 xhigh fast · 100% left · /tmp/project                                 "

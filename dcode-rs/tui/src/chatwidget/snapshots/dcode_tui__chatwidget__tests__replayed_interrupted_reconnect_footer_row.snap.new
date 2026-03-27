@@ -1,0 +1,6 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 11347
+expression: header
+---
+› Ask Dcode to do anything

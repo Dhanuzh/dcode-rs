@@ -1682,6 +1682,7 @@ fn websocket_provider_with_connect_timeout(
         websocket_connect_timeout_ms,
         requires_openai_auth: false,
         supports_websockets: true,
+        fallback_models: vec![],
     }
 }
 

@@ -121,6 +121,9 @@ const RESPONSES_WEBSOCKETS_V2_BETA_HEADER_VALUE: &str = "responses_websockets=20
 const RESPONSES_ENDPOINT: &str = "/responses";
 const RESPONSES_COMPACT_ENDPOINT: &str = "/responses/compact";
 const MEMORIES_SUMMARIZE_ENDPOINT: &str = "/memories/trace_summarize";
+const MIN_OUTPUT_TOKENS: i64 = 1_024;
+const MAX_RESPONSE_OUTPUT_TOKENS: i64 = 16_384;
+const MAX_ANTHROPIC_OUTPUT_TOKENS: i64 = 8_192;
 #[cfg(test)]
 pub(crate) const WEBSOCKET_CONNECT_TIMEOUT: Duration =
     Duration::from_millis(crate::model_provider_info::DEFAULT_WEBSOCKET_CONNECT_TIMEOUT_MS);
@@ -679,6 +682,27 @@ impl ModelClientSession {
             .set_connection_reused(/*connection_reused*/ false);
     }
 
+    fn max_output_tokens_for_model(&self, model_info: &ModelInfo) -> Option<u64> {
+        let context_window = model_info.context_window?;
+        if context_window <= 0 {
+            return None;
+        }
+
+        let effective_percent = model_info.effective_context_window_percent.max(1);
+        let effective_context = context_window.saturating_mul(effective_percent) / 100;
+        if effective_context <= 0 {
+            return None;
+        }
+
+        let mut budget = (effective_context / 4).max(MIN_OUTPUT_TOKENS);
+        let max_for_wire = match self.client.state.provider.wire_api {
+            WireApi::AnthropicMessages => MAX_ANTHROPIC_OUTPUT_TOKENS,
+            WireApi::Responses | WireApi::Chat => MAX_RESPONSE_OUTPUT_TOKENS,
+        };
+        budget = budget.min(max_for_wire);
+        u64::try_from(budget).ok()
+    }
+
     fn build_responses_request(
         &self,
         provider: &dcode_api::Provider,
@@ -725,6 +749,7 @@ impl ModelClientSession {
         };
         let text = create_text_param_for_request(verbosity, &prompt.output_schema);
         let prompt_cache_key = Some(self.client.state.conversation_id.to_string());
+        let max_output_tokens = self.max_output_tokens_for_model(model_info);
         let request = ResponsesApiRequest {
             model: model_info.slug.clone(),
             instructions: instructions.clone(),
@@ -736,6 +761,7 @@ impl ModelClientSession {
             store: provider.is_azure_responses_endpoint(),
             stream: true,
             include,
+            max_output_tokens,
             service_tier: match service_tier {
                 Some(ServiceTier::Fast) => Some("priority".to_string()),
                 Some(service_tier) => Some(service_tier.to_string()),
@@ -1119,16 +1145,14 @@ impl ModelClientSession {
             &responses_request.input,
             &responses_request.tools,
             responses_request.parallel_tool_calls,
+            responses_request.max_output_tokens,
         )
         .map_err(map_api_error)?;
 
         let extra_headers = self.client.build_subagent_headers();
 
-        let client = dcode_api::ChatClient::new(
-            transport,
-            client_setup.api_provider,
-            client_setup.api_auth,
-        );
+        let client =
+            dcode_api::ChatClient::new(transport, client_setup.api_provider, client_setup.api_auth);
 
         let stream = client
             .stream_request(chat_body, extra_headers)
@@ -1176,6 +1200,7 @@ impl ModelClientSession {
             &responses_request.instructions,
             &responses_request.input,
             &responses_request.tools,
+            responses_request.max_output_tokens,
         )
         .map_err(map_api_error)?;
 

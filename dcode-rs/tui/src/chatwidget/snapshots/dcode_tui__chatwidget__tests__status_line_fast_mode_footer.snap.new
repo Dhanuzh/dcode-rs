@@ -1,0 +1,10 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 11780
+expression: terminal.backend()
+---
+"                                                                                "
+"                                                                                "
+"› Ask Dcode to do anything                                                      "
+"                                                                                "
+"  Fast on                                                                       "

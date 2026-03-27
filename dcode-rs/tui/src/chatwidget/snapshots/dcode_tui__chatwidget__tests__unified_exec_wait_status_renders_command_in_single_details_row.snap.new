@@ -1,0 +1,12 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 5698
+expression: rendered
+---
+• Waiting for background terminal (0s • esc to …
+  └ cargo test -p dcode-core -- --exact…
+
+
+› Ask Dcode to do anything
+
+  ? for shortcuts            100% context left

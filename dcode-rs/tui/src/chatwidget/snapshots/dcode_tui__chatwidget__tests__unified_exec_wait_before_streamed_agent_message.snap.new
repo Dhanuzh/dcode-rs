@@ -1,0 +1,8 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 5616
+expression: combined
+---
+• Waited for background terminal · cargo test -p dcode-core
+
+• Streaming response.

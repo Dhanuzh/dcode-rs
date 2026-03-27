@@ -1,0 +1,8 @@
+---
+source: tui/src/chatwidget/tests.rs
+assertion_line: 2614
+expression: popup
+---
+› Ask Dcode to do anything
+
+  gpt-5 default · 100% left · ~/rust/dcode/dcode/dcode-rs/tui

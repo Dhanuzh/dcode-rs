@@ -1,0 +1,14 @@
+---
+source: tui/src/bottom_pane/list_selection_view.rs
+assertion_line: 1526
+expression: "render_lines_with_width(&view, 80)"
+---
+                                                                                
+  Select Model and Effort                                                       
+                                                                                
+› 1. gpt-5.1-dcode (current)  Optimized for Dcode. Balance of reasoning         
+                              quality and coding ability.                       
+  2. gpt-5.1-dcode-mini       Optimized for Dcode. Cheaper, faster, but less    
+                              capable.                                          
+  3. gpt-4.1-dcode            Legacy model. Use when you need compatibility     
+                              with older automations.

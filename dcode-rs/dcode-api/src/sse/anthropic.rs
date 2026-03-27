@@ -82,9 +82,12 @@ pub async fn process_anthropic_sse(
                 if let Ok(msg) = serde_json::from_str::<MessageStartEvent>(data) {
                     response_id = msg.message.id;
                     if let Some(u) = msg.message.usage {
+                        let cached = u
+                            .cache_read_input_tokens
+                            .saturating_add(u.cache_creation_input_tokens);
                         usage = Some(TokenUsage {
                             input_tokens: u.input_tokens,
-                            cached_input_tokens: 0,
+                            cached_input_tokens: cached,
                             output_tokens: u.output_tokens,
                             reasoning_output_tokens: 0,
                             total_tokens: u.input_tokens.saturating_add(u.output_tokens),
@@ -322,6 +325,12 @@ struct MessageUsage {
     input_tokens: i64,
     #[serde(default)]
     output_tokens: i64,
+    /// Tokens written to cache in this request (Anthropic prompt caching).
+    #[serde(default)]
+    cache_creation_input_tokens: i64,
+    /// Tokens read from cache (90% cheaper than regular input tokens).
+    #[serde(default)]
+    cache_read_input_tokens: i64,
 }
 
 #[derive(Deserialize)]

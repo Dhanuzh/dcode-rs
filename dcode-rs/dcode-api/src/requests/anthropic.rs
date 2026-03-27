@@ -16,6 +16,7 @@ pub fn build_anthropic_request(
     instructions: &str,
     input: &[ResponseItem],
     tools_json: &[Value],
+    max_output_tokens: Option<u64>,
 ) -> Result<Value, ApiError> {
     let mut messages: Vec<Value> = Vec::new();
 
@@ -50,16 +51,26 @@ pub fn build_anthropic_request(
     let mut body = json!({
         "model": model,
         "messages": messages,
-        "max_tokens": DEFAULT_MAX_TOKENS,
+        "max_tokens": max_output_tokens.unwrap_or(DEFAULT_MAX_TOKENS),
         "stream": true,
     });
 
     if !instructions.trim().is_empty() {
-        body["system"] = json!(instructions);
+        body["system"] = json!([{
+            "type": "text",
+            "text": instructions,
+            "cache_control": {"type": "ephemeral"}
+        }]);
     }
 
     if !anthropic_tools.is_empty() {
-        body["tools"] = json!(anthropic_tools);
+        let mut tools = anthropic_tools;
+        // Mark the last tool with cache_control so Anthropic caches the entire
+        // system prompt + tool definitions block (prefix caching).
+        if let Some(last) = tools.last_mut() {
+            last["cache_control"] = json!({"type": "ephemeral"});
+        }
+        body["tools"] = json!(tools);
         body["tool_choice"] = json!({"type": "auto"});
     }
 
@@ -104,7 +115,10 @@ fn response_item_to_anthropic_message(item: &ResponseItem) -> Option<Value> {
             }))
         }
         ResponseItem::CustomToolCall {
-            call_id, name, input, ..
+            call_id,
+            name,
+            input,
+            ..
         } => {
             let input_val: Value = serde_json::from_str(input).unwrap_or(json!({}));
             Some(json!({
@@ -117,7 +131,9 @@ fn response_item_to_anthropic_message(item: &ResponseItem) -> Option<Value> {
                 }]
             }))
         }
-        ResponseItem::CustomToolCallOutput { call_id, output, .. } => {
+        ResponseItem::CustomToolCallOutput {
+            call_id, output, ..
+        } => {
             let content = output.to_string();
             Some(json!({
                 "role": "user",
